@@ -1,0 +1,137 @@
+# ============================================================
+# Multi-Agent Plan Repair
+# Medium Experiment Configuration
+# ============================================================
+
+project:
+  name: "multiagent-plan-repair"
+  seed: 42
+
+environment:
+  grid:
+    rows: 20
+    cols: 20
+
+  static_obstacle_density: 0.08
+  reserve_task_cells: true
+
+  movement:
+    allow_diagonal: false
+    wait_action: true
+
+agents:
+  count: 10
+  tasks_per_agent: 2
+
+  move_cost: 1.0
+  wait_cost: 1.0
+
+tasks:
+  pickup_delivery_distance_min: 5
+  pickup_delivery_distance_max: 15
+
+  priority:
+    normal: 1
+    high: 2
+    emergency: 3
+
+  emergency_task_probability: 0.05
+
+planning:
+  algorithm: "space_time_astar"
+  heuristic: "manhattan"
+
+  max_time_steps: 500
+  max_search_nodes: 50000
+
+  priority_strategy: "most_constrained"
+
+  allow_waiting: true
+
+conflicts:
+  detect_vertex_conflicts: true
+  detect_edge_conflicts: true
+  detect_obstacle_conflicts: true
+
+dynamic_obstacles:
+  enabled: true
+
+  density: 0.10
+
+  events_per_run: 1
+
+  min_step: 10
+  max_step: 100
+
+  duration_min: 5
+  duration_max: 20
+
+disruptions:
+  enabled: true
+
+  types:
+    - "agent_failure"
+    - "dynamic_obstacle"
+    - "emergency_task"
+
+  probabilities:
+    agent_failure: 0.40
+    dynamic_obstacle: 0.40
+    emergency_task: 0.20
+
+repair:
+  enabled: true
+
+  objective: "minimize_modified_agents"
+
+  max_negotiation_neighbors: 4
+  max_negotiation_rounds: 5
+
+  repair_horizon: 30
+  max_alternatives: 5
+
+  local_search_algorithm: "space_time_astar"
+
+  preserve_unaffected_plans: true
+
+simulation:
+  max_steps: 500
+
+  stop_when_all_tasks_complete: true
+  collision_checking: true
+  record_history: true
+
+metrics:
+  record_total_completion_time: true
+  record_makespan: true
+  record_total_path_cost: true
+  record_modified_agents: true
+  record_modification_ratio: true
+  record_repair_time: true
+  record_negotiation_rounds: true
+  record_conflicts: true
+  record_delay: true
+
+visualization:
+  enabled: true
+
+  show_grid: true
+  show_static_obstacles: true
+  show_dynamic_obstacles: true
+  show_agent_paths: true
+  show_agent_ids: true
+  show_tasks: true
+
+  animate: true
+  save_animation: true
+
+  animation_fps: 5
+
+output:
+  results_dir: "results"
+  raw_dir: "results/raw"
+  plots_dir: "results/plots"
+  logs_dir: "results/logs"
+
+  save_json: true
+  save_csv: true

@@ -1,0 +1,25 @@
+# ============================================================
+# Multi-Agent Plan Repair
+# Python Dependencies
+# ============================================================
+
+# Numerical computation
+numpy>=2.0,<3.0
+
+# Data analysis and experiment results
+pandas>=2.2,<3.0
+
+# Visualization and animation
+matplotlib>=3.9,<4.0
+
+# YAML configuration
+PyYAML>=6.0,<7.0
+
+# Graph utilities
+networkx>=3.3,<4.0
+
+# Testing
+pytest>=8.0,<9.0
+
+# GIF animation support
+Pillow>=10.0,<12.0

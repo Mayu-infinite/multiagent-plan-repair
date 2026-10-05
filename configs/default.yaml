@@ -1,0 +1,230 @@
+# ============================================================
+# Multi-Agent Plan Repair
+# Default Configuration
+# ============================================================
+
+project:
+  name: "multiagent-plan-repair"
+  seed: 42
+
+# ------------------------------------------------------------
+# Warehouse environment
+# ------------------------------------------------------------
+
+environment:
+  grid:
+    rows: 20
+    cols: 20
+
+  # Static obstacles exist before planning begins.
+  static_obstacle_density: 0.08
+
+  # Cells reserved for agent start / pickup / delivery locations.
+  reserve_task_cells: true
+
+  movement:
+    allow_diagonal: false
+    wait_action: true
+
+# ------------------------------------------------------------
+# Agents
+# ------------------------------------------------------------
+
+agents:
+  count: 10
+
+  # Number of tasks assigned to each agent.
+  tasks_per_agent: 2
+
+  # All agents start with equal movement capability.
+  move_cost: 1.0
+
+  # Waiting has a small cost but is allowed to resolve conflicts.
+  wait_cost: 1.0
+
+# ------------------------------------------------------------
+# Task generation
+# ------------------------------------------------------------
+
+tasks:
+  pickup_delivery_distance_min: 5
+  pickup_delivery_distance_max: 15
+
+  priority:
+    normal: 1
+    high: 2
+    emergency: 3
+
+  emergency_task_probability: 0.05
+
+# ------------------------------------------------------------
+# Initial multi-agent planning
+# ------------------------------------------------------------
+
+planning:
+  algorithm: "space_time_astar"
+
+  heuristic: "manhattan"
+
+  max_time_steps: 500
+
+  # Maximum number of states that one Space-Time A*
+  # search is allowed to explore.
+  max_search_nodes: 50000
+
+  # Agents are prioritized in this order when constructing
+  # the initial joint solution.
+  priority_strategy: "most_constrained"
+
+  # Whether an agent can wait in place.
+  allow_waiting: true
+
+# ------------------------------------------------------------
+# Conflict handling
+# ------------------------------------------------------------
+
+conflicts:
+  detect_vertex_conflicts: true
+  detect_edge_conflicts: true
+  detect_obstacle_conflicts: true
+
+# ------------------------------------------------------------
+# Dynamic environment
+# ------------------------------------------------------------
+
+dynamic_obstacles:
+  enabled: true
+
+  # Fraction of currently free cells that may become
+  # dynamically blocked during execution.
+  density: 0.10
+
+  # Number of disruption events during one simulation.
+  events_per_run: 1
+
+  # Time interval during which a disruption may occur.
+  min_step: 10
+  max_step: 100
+
+  # How long a dynamic obstacle remains blocked.
+  duration_min: 5
+  duration_max: 20
+
+# ------------------------------------------------------------
+# Agent disruptions
+# ------------------------------------------------------------
+
+disruptions:
+  enabled: true
+
+  # Possible disruption types.
+  types:
+    - "agent_failure"
+    - "dynamic_obstacle"
+    - "emergency_task"
+
+  # Probability of selecting each disruption type.
+  probabilities:
+    agent_failure: 0.40
+    dynamic_obstacle: 0.40
+    emergency_task: 0.20
+
+# ------------------------------------------------------------
+# Local plan repair
+# ------------------------------------------------------------
+
+repair:
+  enabled: true
+
+  # IMPORTANT:
+  # Repair must modify the smallest possible set of agents.
+  objective: "minimize_modified_agents"
+
+  # Maximum number of neighboring agents that the
+  # disrupted agent communicates with.
+  max_negotiation_neighbors: 4
+
+  # Maximum negotiation rounds.
+  max_negotiation_rounds: 5
+
+  # Maximum temporal window around the disruption
+  # considered for local repair.
+  repair_horizon: 30
+
+  # Number of alternative paths considered for a repair.
+  max_alternatives: 5
+
+  # Use Space-Time A* only for the affected local
+  # trajectory segment, NOT for global replanning.
+  local_search_algorithm: "space_time_astar"
+
+  # Whether unaffected agents should preserve
+  # their original plans.
+  preserve_unaffected_plans: true
+
+# ------------------------------------------------------------
+# Simulation
+# ------------------------------------------------------------
+
+simulation:
+  max_steps: 500
+
+  # Stop when every task has been completed.
+  stop_when_all_tasks_complete: true
+
+  # Collision checking is performed at every timestep.
+  collision_checking: true
+
+  # Record complete simulation history for visualization
+  # and evaluation.
+  record_history: true
+
+# ------------------------------------------------------------
+# Metrics
+# ------------------------------------------------------------
+
+metrics:
+  record_total_completion_time: true
+  record_makespan: true
+  record_total_path_cost: true
+
+  # Most important plan-repair metric.
+  record_modified_agents: true
+
+  record_modification_ratio: true
+  record_repair_time: true
+  record_negotiation_rounds: true
+  record_conflicts: true
+  record_delay: true
+
+# ------------------------------------------------------------
+# Visualization
+# ------------------------------------------------------------
+
+visualization:
+  enabled: true
+
+  show_grid: true
+  show_static_obstacles: true
+  show_dynamic_obstacles: true
+  show_agent_paths: true
+  show_agent_ids: true
+  show_tasks: true
+
+  animate: true
+  save_animation: true
+
+  animation_fps: 5
+
+# ------------------------------------------------------------
+# Output
+# ------------------------------------------------------------
+
+output:
+  results_dir: "results"
+  raw_dir: "results/raw"
+  plots_dir: "results/plots"
+  logs_dir: "results/logs"
+
+  save_json: true
+  save_csv: true
