@@ -102,7 +102,7 @@ logs/
 results/raw/*
 
 # Generated plots / figures
-results/plots/*
+#results/plots/*
 
 # Simulation logs
 results/logs/*
@@ -112,7 +112,7 @@ results/logs/*
 # ------------------------------------------------------------
 
 !results/raw/.gitkeep
-!results/plots/.gitkeep
+#!results/plots/.gitkeep
 !results/logs/.gitkeep
 
 # ------------------------------------------------------------
