@@ -119,7 +119,7 @@ results/logs/*
 # Generated visualization files
 # ------------------------------------------------------------
 
-*.gif
+#*.gif
 *.mp4
 *.m4v
 *.avi
@@ -130,7 +130,7 @@ results/logs/*
 # Generated images
 # ------------------------------------------------------------
 
-*.png
+#*.png
 *.jpg
 *.jpeg
 
