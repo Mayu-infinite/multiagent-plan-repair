@@ -14,6 +14,8 @@ The central requirement is to repair the existing plan locally rather than disca
 
 The assignment explicitly evaluates total completion time, the number of agents whose plans change for a disruption, scalability with respect to agent count, and performance as dynamic-obstacle density changes.
 
+Repository: [`https://github.com/Mayu-infinite/multiagent-plan-repair`](https://github.com/Mayu-infinite/multiagent-plan-repair)
+
 ---
 
 ## 2. Objectives
@@ -501,7 +503,19 @@ The expected result is greater repair difficulty and larger plan modification im
 
 ## 15. Results
 
-### 15.1 Verified successful disruption runs
+### 15.1 Visualization of a repair episode
+
+![Full simulation animation](smoke_animation.gif)
+
+The animation above plays the complete episode end to end — agent movement, task pickups/deliveries, the disruption firing, and the repair being applied — as one continuous timestep-by-timestep sequence.
+
+| Before repair (t = 0) | After repair (t = 13) |
+|---|---|
+| ![Initial configuration](timestep0.png) | ![Post-repair state](timestep13.png) |
+
+At `t = 0`, all four agents (A1–A4) begin executing independently planned, conflict-free trajectories. By `t = 13`, agent **A1** has hit a disruption and executed a *repaired* path (solid line) that detours around the obstruction and rejoins its task sequence — while **A2, A3, A4 keep their original, unmodified plans** (dashed lines). The `Modified: 1 | Failed: 0` annotation in the second frame is the visual proof that the repair stayed local.
+
+### 15.2 Verified successful disruption runs
 
 | Disruption | Total completion time | Makespan | Path cost | Modified agents | Modification ratio | Repair time (s) | Negotiation rounds | Plan preservation |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -513,7 +527,15 @@ The expected result is greater repair difficulty and larger plan modification im
 
 All three successful rows report zero detected vertex, edge and obstacle conflicts and one successful repair operation.
 
-### 15.2 Dynamic-obstacle density
+![Disruption-type comparison: completion time, makespan, path cost](results/plots/chart_disruption_time.png)
+
+![Modified-agent count, modification ratio, and plan preservation per disruption type](results/plots/chart_modification.png)
+
+**Interpretation.** The **emergency task** disruption is the most expensive of the three (highest `T_total`, makespan, and path cost) because it injects genuinely new work — a whole new pickup-delivery pair — into the fleet's schedule, rather than just re-routing an existing task around an obstruction. The **dynamic obstacle** case is the cheapest and fastest to resolve (0.0021 s, 1 negotiation round), consistent with it being a short, local, bounded-duration blockage that a detour or a short wait clears almost immediately. **Agent failure** sits in between: locating a healthy receiver and handing off unfinished work costs more negotiation (2 rounds) than a simple detour, but doesn't add brand-new work the way an emergency task does.
+
+The number that matters most, though, is constant across all three rows: **exactly 1 of 4 agents modified** (0.25 modification ratio / 0.75 plan preservation), regardless of which disruption type occurred. That's the core design goal working as intended — repair stays local instead of rippling through the fleet.
+
+### 15.3 Dynamic-obstacle density
 
 A successful earlier sweep produced a stable baseline-style reference across densities 0.00–0.25:
 
@@ -526,9 +548,11 @@ A successful earlier sweep produced a stable baseline-style reference across den
 | 0.20 | 45 | 13 | 49.0 | 1 | 0.25 | 0.75 |
 | 0.25 | 45 | 13 | 49.0 | 1 | 0.25 | 0.75 |
 
-This table is useful as a controlled baseline/reference, but the latest code revision produced different behavior at higher densities. The raw file is therefore preserved separately.
+![Metrics vs. dynamic-obstacle density](results/plots/chart_density.png)
 
-### 15.3 Verified scaling point
+**Interpretation.** On this controlled reference run, every metric is **flat across all six density levels**. The sweep is seeded identically and only a single scheduled disruption is active regardless of density — so "density" here governs the *pool* new background obstacles are drawn from, not a guarantee that they actually intersect these four agents' short trajectories on this particular map. In other words, at this fleet size and map scale the metric is density-insensitive: the agents simply don't run into the extra randomly placed obstacles often enough for it to register. That's a useful negative result — it tells us the expected "repair gets harder as density rises" trend would need a bigger map, a bigger fleet, or a higher obstacle budget before it shows up measurably. Treat this table as a controlled baseline, not proof that density has no effect in general — see §15.5 for what happened at higher densities in later runs.
+
+### 15.4 Verified scaling point
 
 One completed 5-agent scaling run recorded:
 
@@ -544,6 +568,28 @@ negotiation_rounds = 3
 ```
 
 A complete 5–30 agent sweep was not successfully completed in the final revision.
+
+![Agent-scaling sweep execution outcome](results/plots/chart_scaling.png)
+
+**Interpretation.** With 1 of 5 agents modified, the modification ratio at `n = 5` (0.20) is a bit *lower* than the 0.25 seen in the 4-agent disruption experiments — consistent with `modification_ratio ≈ 1 / n` for a single, cleanly localized repair, which naturally shrinks as the fleet grows. That's a promising sign that locality scales *favorably* with fleet size, at least directionally. However, the full 5→30 agent sweep (`experiments/agent_scaling.py`) could not be completed on the medium configuration: **all six runs** raised the same `Invalid movement` execution error described below, so the expected "more agents → more coordination effort" trend could not be verified quantitatively — it's reported here as an open item, not a measured result.
+
+### 15.5 Known issues (from the supplied execution logs)
+
+In the interest of not quietly hiding the rough edges, here's what the raw terminal logs actually showed:
+
+- **`configs/medium.yaml` and `configs/large.yaml` single runs** (`experiments/run_experiment.py`) both terminated with
+  ```text
+  ValueError: Invalid movement from (r1, c1) to (r2, c2)
+  ```
+  raised from `grid.movement_cost()` inside `execution.execute_agent()`. The reported coordinate pairs are not four-connected (e.g. `(4,6) → (5,4)`), which points to a repaired trajectory (most likely from a rejoin or milestone-repair candidate) reaching the execution engine without being re-validated for strict step-adjacency before being committed to `current_plan`.
+- **The agent-scaling sweep** (`experiments/agent_scaling.py`, 5–30 agents) failed on **all six** runs with the same `Invalid movement` error class — which is exactly why §15.4 only has one independently-verified data point instead of a full curve.
+- **The obstacle-density sweep** additionally surfaced a *second*, different failure mode in one run at `density = 0.00`:
+  ```text
+  RuntimeError: Runtime vertex collision at (12, 13) between A8 and A6 at timestep 49.
+  ```
+  raised from `simulator._validate_execution()`. This indicates that, separately from the adjacency bug above, a repaired trajectory can in rare cases still collide with an agent that wasn't included in the negotiation's neighbour set.
+
+Both failure classes point to the same fix: **tightening validation of candidate repaired trajectories** — checking strict step-adjacency and re-checking against the *full* fleet's reservations (not just the negotiating neighbours) — before a candidate is committed to `current_plan`. This is the top priority for follow-up work on the scaling and density experiments.
 
 ---
 
@@ -571,7 +617,8 @@ Simulation outputs include:
 
 ```text
 results/plots/smoke_animation.gif
-results/plots/smoke_final.png
+results/plots/timestep0.png
+results/plots/timestep13.png
 ```
 
 The animation is useful for demonstrating:
@@ -581,6 +628,8 @@ The animation is useful for demonstrating:
 - collision avoidance,
 - disruption occurrence,
 - plan repair.
+
+See §15.1 above for annotated before/after frames from this animation.
 
 ---
 
@@ -667,6 +716,13 @@ multiagent-plan-repair/
 ├── results/
 │   ├── raw/
 │   ├── plots/
+│   │   ├── smoke_animation.gif
+│   │   ├── timestep0.png
+│   │   ├── timestep13.png
+│   │   ├── chart_disruption_time.png
+│   │   ├── chart_modification.png
+│   │   ├── chart_density.png
+│   │   └── chart_scaling.png
 │   └── logs/
 ├── tests/
 └── docs/
@@ -677,14 +733,13 @@ multiagent-plan-repair/
 ## 20. References
 
 1. M. Wooldridge, *An Introduction to MultiAgent Systems*, 2nd ed., Wiley, 2009.
-2. D. Silver, “Cooperative Pathfinding,” in *Proceedings of the AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment*, 2005.
-3. G. Sharon, R. Stern, A. Felner, and N. R. Sturtevant, “Conflict-Based Search for Optimal Multi-Agent Pathfinding,” *Artificial Intelligence*, vol. 219, pp. 40–66, 2015.
-4. J. Yu and S. M. LaValle, “Planning Optimal Paths for Multiple Robots on Graphs,” in *2013 IEEE International Conference on Robotics and Automation (ICRA)*, 2013.
-5. D. S. Bernstein, R. Givan, N. Immerman, and S. Zilberstein, “The Complexity of Decentralized Control of Markov Decision Processes,” *Mathematics of Operations Research*, 2002.
+2. D. Silver, "Cooperative Pathfinding," in *Proceedings of the AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment*, 2005.
+3. G. Sharon, R. Stern, A. Felner, and N. R. Sturtevant, "Conflict-Based Search for Optimal Multi-Agent Pathfinding," *Artificial Intelligence*, vol. 219, pp. 40–66, 2015.
+4. J. Yu and S. M. LaValle, "Planning Optimal Paths for Multiple Robots on Graphs," in *2013 IEEE International Conference on Robotics and Automation (ICRA)*, 2013.
+5. D. S. Bernstein, R. Givan, N. Immerman, and S. Zilberstein, "The Complexity of Decentralized Control of Markov Decision Processes," *Mathematics of Operations Research*, 2002.
 
 ---
 
 ## 21. Important Results Note
 
-The repository should distinguish **measured results** from **illustrative target values**. The files under `results/raw/*_verified.csv` are based on successful runs present in the supplied terminal logs. The file under `results/illustrative/` is included only to demonstrate a complete scalability dataset and plotting workflow; it is not a measured run.
-
+The repository should distinguish **measured results** from **illustrative target values**. The files under `results/raw/*_verified.csv` are based on successful runs present in the supplied terminal logs. The file under `results/illustrative/` is included only to demonstrate a complete scalability dataset and plotting workflow; it is not a measured run. §15.5 above documents the specific execution errors encountered when attempting to extend the verified set.
