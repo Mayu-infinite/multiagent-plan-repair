@@ -21,7 +21,7 @@ env/
 ENV/
 
 # ------------------------------------------------------------
-# Python tooling / test / coverage
+# Python tooling / testing / coverage
 # ------------------------------------------------------------
 
 .pytest_cache/
@@ -65,8 +65,6 @@ pip-wheel-metadata/
 
 .vscode/
 .idea/
-
-# VS Code workspace files that may be created outside .vscode
 *.code-workspace
 
 # ------------------------------------------------------------
@@ -81,7 +79,6 @@ Thumbs.db
 # ------------------------------------------------------------
 
 *.log
-logs/
 
 # ------------------------------------------------------------
 # Temporary files
@@ -95,31 +92,25 @@ logs/
 .#*
 
 # ------------------------------------------------------------
-# Experiment-generated results
+# Experiment results
 # ------------------------------------------------------------
 
-# Raw experiment outputs
+# Keep the results directory and its three subdirectories in Git.
+# Raw generated experiment files are ignored.
 results/raw/*
-
-# Generated plots / figures
-#results/plots/*
-
-# Simulation logs
-results/logs/*
-
-# ------------------------------------------------------------
-# Keep the results directories themselves in Git
-# ------------------------------------------------------------
-
 !results/raw/.gitkeep
-#!results/plots/.gitkeep
-!results/logs/.gitkeep
+
+# Plots are intentionally tracked because they are used
+# in the README/report.
+# DO NOT ignore results/plots/
+
+# Tables / summarized result files are tracked.
+# DO NOT ignore results/tables/
 
 # ------------------------------------------------------------
-# Generated visualization files
+# Generated visualization / video files
 # ------------------------------------------------------------
 
-#*.gif
 *.mp4
 *.m4v
 *.avi
@@ -127,10 +118,9 @@ results/logs/*
 *.webm
 
 # ------------------------------------------------------------
-# Generated images
+# Generated images outside results/plots/
 # ------------------------------------------------------------
 
-#*.png
 *.jpg
 *.jpeg
 
@@ -140,6 +130,8 @@ results/logs/*
 
 *.prof
 *.lprof
+*.backup
+*.backup*
 
 # ------------------------------------------------------------
 # Local experiment databases / serialized objects
@@ -175,9 +167,3 @@ local.yaml
 local.yml
 config.local.yaml
 config.local.yml
-# Experiment outputs - keep local, do not commit
-results/
-.venv/
-__pycache__/
-*.pyc
-*.backup*
