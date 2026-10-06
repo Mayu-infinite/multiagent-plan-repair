@@ -505,13 +505,13 @@ The expected result is greater repair difficulty and larger plan modification im
 
 ### 15.1 Visualization of a repair episode
 
-![Full simulation animation](smoke_animation.gif)
+![Full simulation animation](results/plots/smoke_animation.gif)
 
 The animation above plays the complete episode end to end — agent movement, task pickups/deliveries, the disruption firing, and the repair being applied — as one continuous timestep-by-timestep sequence.
 
 | Before repair (t = 0) | After repair (t = 13) |
-|---|---|
-| ![Initial configuration](timestep0.png) | ![Post-repair state](timestep13.png) |
+|:---:|:---:|
+| <img src="results/plots/timestep0.png" alt="Initial configuration" width="420"> | <img src="results/plots/timestep13.png" alt="Post-repair state" width="420"> |
 
 At `t = 0`, all four agents (A1–A4) begin executing independently planned, conflict-free trajectories. By `t = 13`, agent **A1** has hit a disruption and executed a *repaired* path (solid line) that detours around the obstruction and rejoins its task sequence — while **A2, A3, A4 keep their original, unmodified plans** (dashed lines). The `Modified: 1 | Failed: 0` annotation in the second frame is the visual proof that the repair stayed local.
 
